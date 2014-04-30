@@ -31,6 +31,49 @@ describe "Static pages" do
 
     it_should_behave_like "all static pages"
     it { should_not have_title('| Home') }
+  
+    describe "for signed-in user" do
+      let(:user) { FactoryGirl.create(:user) }
+      before { sign_in user }
+
+      describe "with no microposts" do
+        before { visit root_path }
+        it { should have_content('0 microposts') }
+      end
+
+      describe "with one micropost" do
+        before do
+          FactoryGirl.create(:micropost, user: user)
+          visit root_path
+        end
+        it { should have_content('1 micropost') }
+      end
+
+      describe "with two microposts" do
+        before do
+          2.times { FactoryGirl.create(:micropost, user: user) }
+          visit root_path
+        end
+        it { should have_content('2 microposts') } 
+      end
+
+      describe "with 31 microposts" do
+        before do
+         31.times { FactoryGirl.create(:micropost, user: user) }
+         visit root_path
+        end
+
+        it "should be paginated" do
+          expect(page).to have_selector('div.pagination')
+        end
+
+        it "should list each micropost" do
+          Micropost.paginate(page: 1).each do |micropost|
+            expect(page).to have_selector("li##{micropost.id}", text: micropost.content)
+          end
+        end
+      end
+    end
   end
 
   describe "Help page" do

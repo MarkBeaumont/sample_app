@@ -53,10 +53,34 @@ describe "User pages" do
 
   describe "profile page" do
     let(:user) { FactoryGirl.create(:user) }
+    let!(:m1) { FactoryGirl.create(:micropost, user: user, content: "Foo") }
+    let!(:m2) { FactoryGirl.create(:micropost, user: user, content: "Bar") }
+
     before { visit user_path(user) }
 
     it { should have_content(user.name) }
     it { should have_title(user.name) }
+
+    describe "microposts" do
+      it { should have_content(m1.content) }
+      it { should have_content(m2.content) }
+      it { should have_content(user.microposts.count) }
+
+      describe "as the owner" do
+        before { sign_in user }
+        it { should have_link('delete', href: micropost_path(m1)) }
+        it { should have_link('delete', href: micropost_path(m2)) }
+      end
+
+      describe "as a visitor" do
+        let(:visitor) { FactoryGirl.create(:user) }
+        before do 
+          sign_in visitor, no_capybara: true
+        end 
+        it { should_not have_link('delete', href: micropost_path(m1)) }
+        it { should_not have_link('delete', href: micropost_path(m2)) }
+      end
+    end
   end
 
   describe "signup page" do
